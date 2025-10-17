@@ -1,331 +1,347 @@
-<!-- frontend/pages/index.vue -->
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-8">
-    <div class="max-w-7xl mx-auto">
-      <div class="text-center mb-8">
-        <h1 class="text-4xl font-bold text-white mb-2">
-          Therapeutic Exercise Character Customization
-        </h1>
-        <p class="text-slate-400">
-          Customize your avatar for motion capture analysis
-        </p>
-      </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <!-- Preview Area -->
-        <div class="bg-slate-800 rounded-2xl p-6 shadow-2xl border border-slate-700">
-          <h2 class="text-xl font-semibold text-white mb-4">Live Preview</h2>
-          <div class="aspect-square bg-slate-900 rounded-xl overflow-hidden">
-            <ThreeJsPreview :customization="customization" />
-          </div>
-          
-          <div class="mt-4 grid grid-cols-3 gap-2 text-center">
-            <div class="bg-slate-900 rounded-lg p-3">
-              <p class="text-xs text-slate-400">Weight</p>
-              <p class="text-white font-semibold">{{ getWeightLabel(customization.weight) }}</p>
-            </div>
-            <div class="bg-slate-900 rounded-lg p-3">
-              <p class="text-xs text-slate-400">Height</p>
-              <p class="text-white font-semibold">{{ getHeightLabel(customization.height) }}</p>
-            </div>
-            <div class="bg-slate-900 rounded-lg p-3">
-              <p class="text-xs text-slate-400">Build</p>
-              <p class="text-white font-semibold">{{ getMuscleLabel(customization.muscle) }}</p>
-            </div>
-          </div>
+    <div class="app-container">
+        <div class="py-4 pl-4">
+            <ThreeJsPreview
+                :skinColor="skinColor"
+                :tshirtColor="tshirtColor"
+                :morphValue="morphValue"
+                :heightValue="heightValue"
+                :leftArmLength="leftArmLength"
+            />
         </div>
 
-        <!-- Customization Controls -->
-        <div class="space-y-4">
-          <!-- Body Proportions -->
-          <div class="bg-slate-800 rounded-2xl p-6 shadow-2xl border border-slate-700">
-            <h3 class="text-lg font-semibold text-white mb-4">Body Proportions</h3>
-            
-            <!-- Weight -->
-            <div class="mb-6">
-              <div class="flex justify-between items-center mb-2">
-                <label class="text-slate-300 text-sm">Weight</label>
-                <span class="text-white font-mono text-sm">{{ customization.weight.toFixed(2) }}</span>
-              </div>
-              <input
-                v-model.number="customization.weight"
-                type="range"
-                min="0.8"
-                max="1.3"
-                step="0.05"
-                class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
-              />
-            </div>
+        <div class="flex flex-col gap-4 max-h-screen pr-4">
+            <Config @update:config="config = $event" />
+            <Appearance
+                @update:skinColor="skinColor = $event"
+                @update:tshirtColor="tshirtColor = $event"
+                @update:morphValue="morphValue = $event"
+                @update:height="heightValue = $event"
+            />
+            <Accessibility @update:leftArmLength="leftArmLength = $event" />
+            <button class="generate-btn" @click="generateExercise">
+                Generate Animation
+            </button>
 
-            <!-- Height -->
-            <div class="mb-6">
-              <div class="flex justify-between items-center mb-2">
-                <label class="text-slate-300 text-sm">Height</label>
-                <span class="text-white font-mono text-sm">{{ customization.height.toFixed(2) }}</span>
-              </div>
-              <input
-                v-model.number="customization.height"
-                type="range"
-                min="0.85"
-                max="1.15"
-                step="0.05"
-                class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
-              />
-            </div>
-
-            <!-- Muscle -->
-            <div>
-              <div class="flex justify-between items-center mb-2">
-                <label class="text-slate-300 text-sm">Muscle Definition</label>
-                <span class="text-white font-mono text-sm">{{ customization.muscle.toFixed(2) }}</span>
-              </div>
-              <input
-                v-model.number="customization.muscle"
-                type="range"
-                min="0.8"
-                max="1.4"
-                step="0.05"
-                class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
-              />
-            </div>
-          </div>
-
-          <!-- Appearance -->
-          <div class="bg-slate-800 rounded-2xl p-6 shadow-2xl border border-slate-700">
-            <h3 class="text-lg font-semibold text-white mb-4">Appearance</h3>
-            
-            <div class="mb-4">
-              <label class="text-slate-300 text-sm block mb-2">Skin Color</label>
-              <input
-                v-model="customization.skinColor"
-                type="color"
-                class="w-full h-10 rounded-lg cursor-pointer"
-              />
-            </div>
-
-            <div class="mb-4">
-              <label class="text-slate-300 text-sm block mb-2">T-Shirt</label>
-              <select
-                v-model="customization.tshirt"
-                class="w-full bg-slate-900 text-white rounded-lg px-4 py-2 border border-slate-700"
-              >
-                <option value="none">None</option>
-                <option value="basic">Basic T-Shirt</option>
-                <option value="polo">Polo Shirt</option>
-              </select>
-            </div>
-
-            <div v-if="customization.tshirt !== 'none'">
-              <label class="text-slate-300 text-sm block mb-2">T-Shirt Color</label>
-              <input
-                v-model="customization.tshirtColor"
-                type="color"
-                class="w-full h-10 rounded-lg cursor-pointer"
-              />
-            </div>
-          </div>
-
-          <!-- Exercise Selection -->
-          <div class="bg-slate-800 rounded-2xl p-6 shadow-2xl border border-slate-700">
-            <h3 class="text-lg font-semibold text-white mb-4">Exercise Settings</h3>
-            
-            <div class="mb-4">
-              <label class="text-slate-300 text-sm block mb-2">Exercise Type</label>
-              <select
-                v-model="exerciseConfig.exercise"
-                class="w-full bg-slate-900 text-white rounded-lg px-4 py-2 border border-slate-700"
-              >
-                <option value="squat">Squat</option>
-                <option value="lunge">Lunge</option>
-                <option value="bridge">Bridge</option>
-              </select>
-            </div>
-
-            <div class="mb-4">
-              <label class="text-slate-300 text-sm block mb-2">Execution</label>
-              <select
-                v-model="exerciseConfig.execution"
-                class="w-full bg-slate-900 text-white rounded-lg px-4 py-2 border border-slate-700"
-              >
-                <option value="correct">Correct</option>
-                <option value="incorrect">Incorrect</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Generate Button -->
-          <button
-            @click="handleGenerate"
-            :disabled="isGenerating"
-            class="w-full py-4 rounded-xl font-semibold text-lg transition-all"
-            :class="isGenerating 
-              ? 'bg-slate-700 text-slate-400 cursor-not-allowed' 
-              : 'bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600 shadow-lg hover:shadow-xl'"
-          >
-            {{ isGenerating ? 'Generating Animation...' : 'Generate Therapeutic Exercise' }}
-          </button>
-
-          <!-- Job Status -->
-          <div v-if="currentJob" class="bg-slate-800 rounded-2xl p-6 shadow-2xl border border-slate-700">
-            <h3 class="text-lg font-semibold text-white mb-4">Render Status</h3>
-            
-            <div class="space-y-3">
-              <div class="flex justify-between items-center">
-                <span class="text-slate-400">Job ID:</span>
-                <span class="text-white font-mono text-sm">{{ currentJob.id.substring(0, 8) }}...</span>
-              </div>
-              
-              <div class="flex justify-between items-center">
-                <span class="text-slate-400">Status:</span>
-                <span 
-                  class="px-3 py-1 rounded-full text-sm font-semibold"
-                  :class="{
-                    'bg-yellow-500/20 text-yellow-400': currentJob.status === 'queued',
-                    'bg-blue-500/20 text-blue-400': currentJob.status === 'processing',
-                    'bg-green-500/20 text-green-400': currentJob.status === 'completed',
-                    'bg-red-500/20 text-red-400': currentJob.status === 'failed'
-                  }"
-                >
-                  {{ currentJob.status }}
-                </span>
-              </div>
-
-              <div v-if="currentJob.status === 'completed'" class="pt-3">
-                <button
-                  @click="downloadAnimation(currentJob.output_file)"
-                  class="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors"
-                >
-                  Download Animation
-                </button>
-              </div>
-
-              <div v-if="currentJob.status === 'failed'" class="pt-3">
-                <div class="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-                  <p class="text-red-400 text-sm">{{ currentJob.error || 'Unknown error occurred' }}</p>
-                </div>
-              </div>
-            </div>
-          </div>
+            <div class="error-message" id="errorMessage"></div>
         </div>
-      </div>
     </div>
-  </div>
 </template>
 
 <script setup>
-const { generateAnimation, getJobStatus, downloadAnimation } = useBlenderAPI()
 
-const customization = ref({
-  weight: 1.0,
-  height: 1.0,
-  muscle: 1.0,
-  skinColor: '#FFDBAC',
-  tshirt: 'none',
-  tshirtColor: '#4A90E2'
-})
+import { ref, reactive } from 'vue';
+import { useHead } from '#app';
+// set page title/meta for Nuxt
+useHead({ title: '3D Character Customization' });
+import Appearance from '../components/Appearance.vue';
+import Config from '../components/Config.vue';
+import Accessibility from '../components/Accessibility.vue';
+import ThreeJsPreview from '../components/ThreeJsPreview.vue';
 
-const exerciseConfig = ref({
-  exercise: 'squat',
-  execution: 'correct'
-})
+// Centralized reactive state for child components
+const skinColor = ref('#f0c8a0');
+const tshirtColor = ref('#000000');
+const morphValue = ref(0.0); // body weight / morph target influence
+const heightValue = ref(170); // cm
+const leftArmLength = ref(3); // accessibility option
+const config = reactive({ participant: '1', movement: 'squat', setType: 'correct', camera: 0, fps: 30, saveName: '' });
 
-const isGenerating = ref(false)
-const currentJob = ref(null)
-let statusCheckInterval = null
-
-const getWeightLabel = (value) => {
-  if (value < 0.9) return 'Slim'
-  if (value > 1.1) return 'Heavy'
-  return 'Average'
-}
-
-const getHeightLabel = (value) => {
-  if (value < 0.95) return 'Short'
-  if (value > 1.05) return 'Tall'
-  return 'Average'
-}
-
-const getMuscleLabel = (value) => {
-  if (value < 0.9) return 'Lean'
-  if (value > 1.1) return 'Muscular'
-  return 'Athletic'
-}
-
-const handleGenerate = async () => {
-  isGenerating.value = true
-  
-  try {
-    const config = {
-      person: '04',
-      exercise: exerciseConfig.value.exercise,
-      execution: exerciseConfig.value.execution,
-      camera: 1,
-      fps: 30,
-      filename: `animation_${Date.now()}`,
-      customization: customization.value
-    }
-
-    const response = await generateAnimation(config)
-    
-    if (response.success) {
-      currentJob.value = {
-        id: response.job_id,
-        status: response.status
-      }
-      
-      // Start polling for status
-      startStatusPolling(response.job_id)
-    }
-  } catch (error) {
-    console.error('Error:', error)
-    alert('Failed to generate animation')
-    isGenerating.value = false
-  }
-}
-
-const startStatusPolling = (jobId) => {
-  statusCheckInterval = setInterval(async () => {
+// Page-level server functions remain here and read from reactive state
+async function generateExercise() {
     try {
-      const status = await getJobStatus(jobId)
-      currentJob.value = {
-        ...currentJob.value,
-        ...status
-      }
-      
-      if (status.status === 'completed' || status.status === 'failed') {
-        clearInterval(statusCheckInterval)
-        isGenerating.value = false
-      }
+        const btn = document.querySelector('.generate-btn');
+        if (btn) {
+            btn.textContent = 'Generating...';
+            btn.disabled = true;
+        }
+
+        // Use the reactive config object populated by the Config component
+        const payload = {
+            participant: config.participant,
+            movement: config.movement || 'squat',
+            setType: config.setType || 'correct',
+            camera: parseInt(config.camera) || 0,
+            fps: parseInt(config.fps) || 30,
+            saveName: config.saveName || ''
+        };
+
+        const response = await fetch('/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            showError(`✅ Generation started! Job ID: ${result.job_id}`, 'success');
+            pollJobStatus(result.job_id);
+        } else {
+            showError(`❌ Generation failed: ${result.error}`, 'error');
+        }
     } catch (error) {
-      console.error('Error checking status:', error)
+        console.error('Error generating exercise:', error);
+        showError(`❌ Network error: ${error.message}`, 'error');
+    } finally {
+        const btn = document.querySelector('.generate-btn');
+        if (btn) {
+            btn.textContent = 'Generate Animation';
+            btn.disabled = false;
+        }
     }
-  }, 2000) // Poll every 2 seconds
 }
 
-onUnmounted(() => {
-  if (statusCheckInterval) {
-    clearInterval(statusCheckInterval)
-  }
-})
+async function pollJobStatus(jobId) {
+    const maxPolls = 500; let pollCount = 0;
+    const poll = async () => {
+        try {
+            const response = await fetch(`/api/status/${jobId}`);
+            const status = await response.json();
+            if (status.status === 'completed') {
+                showError(`✅ Animation completed! Runtime: ${status.runtime.toFixed(1)}s`, 'success');
+                const downloadBtn = document.createElement('button');
+                downloadBtn.textContent = 'Download Video'; downloadBtn.className = 'viewer-btn'; downloadBtn.onclick = () => window.open(`/api/download/custom_character_exercise.mp4`, '_blank');
+                document.querySelector('.viewer-controls')?.appendChild(downloadBtn);
+            } else if (status.status === 'failed' || status.status === 'error') {
+                showError(`❌ Generation failed. Check logs for details.`, 'error');
+            } else if (status.status === 'running' && pollCount < maxPolls) {
+                pollCount++; setTimeout(poll, 5000); showError(`⏳ Processing... (${status.runtime.toFixed(1)}s elapsed)`, 'info');
+            } else {
+                showError(`⏰ Generation timed out after ${maxPolls * 5} seconds`, 'error');
+            }
+        } catch (error) { showError(`❌ Status check failed: ${error.message}`, 'error'); }
+    };
+    poll();
+}
+
+function showError(message, type = 'error') {
+    const errorEl = document.getElementById('errorMessage');
+    if (!errorEl) return;
+    errorEl.textContent = message; errorEl.className = `error-message ${type}`; errorEl.style.display = 'block';
+    if (type === 'success') setTimeout(() => errorEl.style.display = 'none', 8000);
+    else if (type === 'info') setTimeout(() => errorEl.style.display = 'none', 3000);
+}
+
 </script>
 
 <style>
-/* Add custom slider styling */
-input[type="range"]::-webkit-slider-thumb {
-  appearance: none;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: #3b82f6;
-  cursor: pointer;
-}
 
-input[type="range"]::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: #3b82f6;
-  cursor: pointer;
-  border: none;
-}
+
+        .app-container {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1rem;
+            /* height: 100vh; */
+        }
+
+        .viewer-panel {
+            position: relative;
+            background: #ffffff;
+            overflow: hidden;
+        }
+
+        #viewer-container {
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+        }
+
+        #viewer-container:active {
+            cursor: grabbing;
+        }
+
+        .viewer-controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .viewer-btn {
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .viewer-btn:hover {
+            background: rgba(255, 255, 255, 1);
+            transform: scale(1.05);
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            color: white;
+            font-size: 18px;
+            z-index: 200;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #333;
+            border-top: 5px solid #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .character-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .character-option {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .character-option:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .character-option.selected {
+            border-color: #667eea;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .animation-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .anim-btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .anim-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .anim-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .generate-section {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            margin: -20px;
+            margin-top: 20px;
+            padding: 20px;
+            color: white;
+        }
+
+
+        .generate-btn {
+            width: 100%;
+            padding: 1rem;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 1rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+
+        .accessibility-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .accessibility-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            background: #f8f9fa;
+        }
+
+        .accessibility-item input[type="checkbox"] {
+            margin: 0;
+        }
+
+        .error-message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            display: none;
+            font-weight: 500;
+        }
+
+        .error-message.error {
+            background: #ff6b6b;
+            color: white;
+            border: 1px solid #ff5252;
+        }
+
+        .error-message.success {
+            background: #4caf50;
+            color: white;
+            border: 1px solid #45a049;
+        }
+
+        .error-message.info {
+            background: #2196f3;
+            color: white;
+            border: 1px solid #1976d2;
+        }
+
+        /* @media (max-width: 768px) {
+            .app-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: 60vh 1fr;
+            }
+        } */
+        
 </style>

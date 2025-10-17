@@ -2,6 +2,8 @@ import { resolve } from 'path'
 
 export default defineNuxtConfig({
   devtools: { enabled: true },
+  // global CSS
+  css: ['~/app/assets/css/main.css'],
 
   modules: ['@nuxtjs/tailwindcss'],
 
